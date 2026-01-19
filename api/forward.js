@@ -1,28 +1,41 @@
+export const config = {
+  runtime: "nodejs",
+};
+
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") {
       return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const targetWebhook = process.env.TARGET_WEBHOOK_URL;
-
-    if (!targetWebhook) {
-      throw new Error("TARGET_WEBHOOK_URL is not defined");
+    const target = process.env.TARGET_WEBHOOK_URL;
+    if (!target) {
+      return res.status(500).json({ error: "TARGET_WEBHOOK_URL missing" });
     }
 
-    const response = await fetch(targetWebhook, {
+    let body = req.body;
+
+    // Handle raw body if Vercel didn't parse it
+    if (!body) {
+      let raw = "";
+      await new Promise((resolve) => {
+        req.on("data", (chunk) => (raw += chunk));
+        req.on("end", resolve);
+      });
+      body = raw ? JSON.parse(raw) : {};
+    }
+
+    await fetch(target, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(req.body),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     });
 
     return res.status(200).json({ success: true });
-  } catch (error) {
+  } catch (err) {
     return res.status(500).json({
-      error: "Forward failed",
-      message: error.message,
+      error: "Runtime failure",
+      message: err.message,
     });
   }
 }
