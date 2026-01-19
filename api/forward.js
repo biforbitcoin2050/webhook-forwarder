@@ -1,24 +1,31 @@
-export default async function handler(req, res) {
-  try {
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: "Method not allowed" });
-    }
+export const config = {
+  runtime: "edge",
+};
 
-    const targetWebhook = process.env.TARGET_WEBHOOK_URL;
-    if (!targetWebhook) {
-      return res.status(500).json({ error: "TARGET_WEBHOOK_URL not set" });
-    }
-
-    await fetch(targetWebhook, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(req.body),
-    });
-
-    return res.status(200).json({ success: true });
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
+export default async function handler(request) {
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
   }
+
+  const target = process.env.TARGET_WEBHOOK_URL;
+
+  if (!target) {
+    return new Response("TARGET_WEBHOOK_URL not set", { status: 500 });
+  }
+
+  const body = await request.text();
+
+  await fetch(target, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body,
+  });
+
+  return new Response(JSON.stringify({ success: true }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 }
+
