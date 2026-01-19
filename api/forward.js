@@ -15,7 +15,6 @@ export default async function handler(req, res) {
 
     let body = req.body;
 
-    // Handle raw body if Vercel didn't parse it
     if (!body) {
       let raw = "";
       await new Promise((resolve) => {
@@ -31,11 +30,8 @@ export default async function handler(req, res) {
       body: JSON.stringify(body),
     });
 
-    return res.status(200).json({ success: true });
+    res.status(200).json({ success: true });
   } catch (err) {
-    return res.status(500).json({
-      error: "Runtime failure",
-      message: err.message,
-    });
+    res.status(500).json({ error: err.message });
   }
 }
